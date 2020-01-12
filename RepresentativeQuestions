@@ -1,0 +1,172 @@
+1) How do you design an application with JMS messaging?
+
+JMS ( Java Messaging System) is a loosely coupled system. It’s purpose is to send, receive messages between components in a system. It is asynchronus , therefore it doesn’t need to connect to receive the message . It’s a reliable way of communication as well. It is concurrent as well.
+
+To design an application using asynchronus JMS, we have make the following interfaces :
+
+Connection
+Session
+MessageProducers( to send message) and MessageConsumers( to receive messages)
+Destination and ConnectionFactory
+
+Messaging services: point-to-point and publisher/consumer
+
+JMS provides reliability mechanism through controlling message acknowledgement, specifying message persistency , setting priority levels , allowing message to expire, creating temporary destinations, creating durable subscription and using local transaction.
+
+A typical connection involves following steps:
+
+Get the initial context
+Look up the queue
+Look up the queue connection factory
+Create a queue connection
+Create a queue session
+Create a queue sender
+Create the message 
+Send the message 
+Close the queue connection
+
+2)  How do you handle exception in JMS consumers and how to you recover?
+
+JMS provides exception handling class. Catching an exception depends on whether it’s a transacted session or not, type of exceptions and whether the client is consumer or producer.
+
+In transacted session, JMS consumer can fail either during processing transaction statements which is called open transaction or during session.commit() which is called commit transaction.
+
+In case of a failover during an open transaction, when the client application calls session.commit(), the client runtime will throw a TransactionRolledBackException and rollback the transaction causing the messages produced are discarded which were not committed successfully before failover and message consumed are redelivered to the consumer if not committed. A new connection is automatically started.
+
+In case of non-transacted session, JMS consumer can face various exception:
+
+In consumer acknowledgement mode, calling Message.acknowledgement or MessageConsumer.receive can raise a JMS Exception. The consumer should call Session.recover to recover or redeliver the unacknowledged messages and then call Message.acknowledge or MessageConsumer.receive 
+Also in auto acknowledgement mode, on getting JMS Exception, the synchronous consumer should pause for some seconds and then resume by calling MessageConsumer.receive to continue receiving message. Any messages failed to be acknowledged will be redelivered using redelivered flag set to true. 
+Even in duplicate Acknowledgement mode, the synchronous consumer should wait few seconds after getting exception and call receive. It’s possible that messages delivered and acknowledged could be redelivered.
+
+3)How do you implement LRU or MRU cache?
+
+LRU is “Least Recently Used” and MRU is “Most Recently Used” . Both of them are same concept.In Java, we can create a stack data structure to store the objects which are recently used in LIFO fashion. Recursive function also uses the LIFO.Even the objects references by JVM are stored in stack as function calls are finished and returned to the old order of processing in program. 
+
+Cache is used to store request to process it faster in future but keeping them in least recently used order and remove least recently item used when a new one comes. So  cache hits needs to be O(1). We also need a list of items to keep update of new objects at top and discard old one at bottom. For O(1) access we use HashMap as insertion and deletion is also O(1 ) as compared to Arrays. And we store the items in LinkedList where we can pin point head and tail. Java has LinkedHashMap in util package to use.
+
+
+Using LinkedHashMap:
+
+package CodingChallenge;
+ import java.util.*; 
+public class Cache<Key,Value> extends LinkedHashMap <Key,Value>{ 
+private final static int size=10; 
+ public Cache(final int maxEntries) 
+{ super(size+1, 1.0f, true); 
+} 
+protected boolean removeEldestEntry(final Map.Entry <Key,Value>oldest) 
+{ return super.size() > size;
+ }
+ }
+
+4)How would you implement Executor Service? 
+ Executor Service is an interface in Java similar to thread pool . Example:
+
+
+package CodingChallenge; 
+public class TaskThread implements Runnable { 
+private String command; 
+public TaskThread(String s){ 
+this.command=s; 
+} 
+
+ public void run() { 
+System.out.println(Thread.currentThread().getName()+" 
+Starting. enter your command = "+command); 
+processCommand(); 
+System.out.println(Thread.currentThread().getName()+" End of task"); 
+} 
+
+ private void processCommand() { 
+        try { Thread.sleep(5000); 
+} catch (InterruptedException e) { 
+    e.printStackTrace(); 
+} 
+} 
+
+public String toString(){ 
+return this.command; 
+} 
+} 
+
+ExecutorSerivce class:
+
+ package CodingChallenge;
+ import java.util.concurrent.Executors;
+ public class ExecutorService { public static void main(String[] args) { 
+java.util.concurrent.ExecutorService e = Executors.newFixedThreadPool(5); 
+for (int i = 0; i < 10; i++) { 
+Runnable task = new TaskThread("" + i); 
+e.execute(task); 
+ } 
+e.shutdown(); 
+while (!e.isTerminated()) { 
+} 
+System.out.println("Finished all tasks"); 
+} 
+}
+
+5)Describe singleton design pattern – how would you implement?
+
+Singleton pattern is one of the design paradigm in Java. It comes as the creational design patterns as its used mostly for creating an object of the class but only one object of it. This pattern has a single class which is responsible for creation of object and also makes sure at the same time that only single object is created. The single class also provides method to access its only object which can be directly accessed instead of instantiating the object of the class. The class is called Singleton Class.
+
+Example:
+
+Singleton class: 
+
+package CodingChallenge;
+ import java.util.*; 
+import java.io.*; 
+public class Singleton { 
+private static Singleton s = new Singleton(); 
+private int value; 
+private String msg; 
+private Singleton(){ 
+            value= 10; 
+            msg="Default message"; 
+} 
+
+public static Singleton getInstance(){ 
+           return s; 
+} 
+
+public void printvalues(){ 
+          System.out.println("Value: "+value+"Msg:"+msg); 
+} 
+} 
+
+SingletonDemo class: 
+
+package CodingChallenge; 
+import java.io.*; 
+import java.util.*; 
+public class SingletonDemo { 
+          public static void main (String args[])throws IOException{ 
+          Singleton obj= Singleton.getInstance(); 
+          obj.printvalues(); 
+} 
+}
+
+6) Describe properties of Java String.
+
+
+In Java, String is a class and immutable object. So for an immutable object we cannot modify any of its attributes values. Once declared and assigned it cannot be manipulated. 
+String is collection of characters representing a word, similar to array which stores same types of values. There are different ways to declare and initialize string data type. 
+
+For example,
+ String S= “Hello World”; 
+
+Whenever string Literal is encountered, the compiler stores this in memory but before it checks in string pool memory (String intern pool in Java heap) if the same string is there then only the reference is returned to old memory location otherwise it is stored in the pool and reference is returned. That’s why String object is immutable so that it doesn’t alter the value of location as multiple references are referencing to the same memory location holding the String value. 
+
+So whenever a String is needed to be altered or manipulated a lot we should use String Buffer and Builder class. String Builder is  not synchronized and String buffer is used for thread safe code because its synchronized. 4.) Also we can use new Constructor to declare the String. 
+
+For example,
+
+ String s= new String(“Hello World”); 
+
+The String class provides the various constructor to create String from char arrays, etc. Whenever new constructor is used it doesn’t store it in String pool and create the new string object which is immutable. So if we compare the object referencing the same location in memory using “==” will gives us false as it creates new object references pointing to same location when we use new constructor. We can use intern method() to specify for the constructor to check in String pool and store it in pool if not present already. So when we need to create a new String object holding same old value we should use new Constructor to declare it.
+
+Java String class provides various method for manipulations of string. Like String.length()  gives the length of the string. We can concat two string using str1.concat(str2).We can also format the string using String.format(); Str1.equals(str2); checks if two string references hold same value or not. Whereas Str1== Str2; checks if two references are equal or not. Str1= str2; is valid and it assign the str1 reference to point to where str2 is referencing. Various other method charAt(), compareTo(),copy(),indexOf() provides other functionalities. References: 
+1. Book: J2EE Applications and BEA WebLogic Server 
+2. Oracle JMS: https://docs.oracle.com/cd/E19340-01/820-6767/aeqdx/index.html
